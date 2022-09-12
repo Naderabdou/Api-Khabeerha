@@ -6,10 +6,14 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Scope;
+use App\Models\Rate;
+
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
 use App\Http\Resources\ProfileResource;
+use App\Http\Resources\RateResource;
+
 
 use App\Traits\GeneralTrait;
 
@@ -135,6 +139,58 @@ public function withdraw_wallet(Request $request){
 
 
   
+}
+public function rate_store($service_provider_id,Request $request){
+  $rules = [
+    'rate'=>'required',
+    'desc'=>'required|string',
+   
+    ];
+    $validator = Validator::make($request->all(), $rules);
+    if ($validator->fails()) {
+        $code = $this->returnCodeAccordingToInput($validator);
+        return $this->returnValidationError($code, $validator);
+    }
+    $data = $validator->validated();
+    $data['user_id'] = Auth::user()->id;
+    $data['service_provider_id'] = $service_provider_id;
+
+    $count=count(Rate::where(['user_id'=>Auth::user()->id , 'service_provider_id'=>$service_provider_id])->get());
+
+
+    if(User::find($service_provider_id)->role === 'service_provider'){
+       if($count == 1){
+        return $this->returnError(200 , 'لقد قمت بقتيم لهذا الشخص من قبل ');
+
+       }else{
+        Rate::create($data);
+       }
+    }else{
+      return $this->returnError(200 , 'هذا ليس مزود خدمه ');
+
+    }
+    
+    return $this->returnSuccessMessage('تم اضافة تقيمك بنجاح');
+
+}
+public function rate(){
+  if(Auth::user()->role == 'service_provider' ){
+   $data= Rate::where('service_provider_id','=',Auth::user()->id)->get();
+   if(count($data) == 0){
+    return $this->returnError(200 , 'لايوجد لديك تقيمات');
+
+   }else{
+    $Rate= RateResource::collection($data);
+    return $this->returnData($Rate);
+   }
+    
+
+
+
+  }else{
+    return $this->returnError(200 , 'هذه الصالحيه ليست لك');
+
+  }
 }
 
 }
