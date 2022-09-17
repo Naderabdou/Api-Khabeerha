@@ -183,16 +183,24 @@ class OrderController extends Controller
         
             if(Auth::user()->role === 'service_provider'){
                 $order = Order::find($id);
-
+             
                 if(!$order){
                     return $this->returnError(404 , 'the order is not found');
                 };
               
-               $order->user()->syncWithPivotValues(Auth::user()->id ,['price'=>$data['price']]);
-               $order->status='receiving';
-               $order->save();
-                return $this->returnSuccessMessage('تم تقديم الطلب بنجاح','200');
+                if($order->status == 'Discuss' || $order->user[0]->id !== Auth::user()->id){
+                    return $this->returnError(404 , 'لايمكن تقديم لهذا الطلب');
 
+                }else{
+                    $order->user()->syncWithPivotValues(Auth::user()->id ,['price'=>$data['price']]);
+                    $order->status='receiving';
+                    $order->save();
+                     return $this->returnSuccessMessage('تم تقديم الطلب بنجاح','200');
+     
+                }
+
+               
+               
             }else{
                 return $this->returnError(200 , 'هذه الصالحيه ليست لك');
 
@@ -262,22 +270,65 @@ class OrderController extends Controller
 
      }
      public function complete_order(){
-        $id= Auth::user()->id ;
-        
-        $data= User::find($id)->orders;
-        $complete_order= $data->Where('status','complete');
-      
-       
         
         
-          
-          $my_order = ApiResource::collection($complete_order->load('user'));
+        if( count(Auth::user()->orders->where('status','complete')) > 0){
+                  
+            $my_services = ApiResource::collection(Auth::user()->orders->where('status','complete')->load('user'));
+            return $this->returnData($my_services,'success');
+
+
+        }else{
+            return $this->returnError(200 , '  لايوجد لديك طلبات منتهية' );
+
+        }
          
          
 
          
-          return $this->returnData($my_order);
      }
+     public function Services(){
+        if(Auth::user()->role == 'service_provider' ){
+            if( count(Auth::user()->order) > 0){
+              
+                $my_services = ApiResource::collection(Auth::user()->order);
+                return $this->returnData($my_services);
+
+
+            }else{
+                return $this->returnError(200 , ' لايوجد لديك خدمات');
+
+            }
+            }else{
+                return $this->returnError(200 , 'هذه الصالحيه ليست لك');
+
+            }
+
+            
+          
+        }
+        public function Services_complete(){
+            if(Auth::user()->role == 'service_provider' ){
+                if( count(Auth::user()->order->where('status','complete')) > 0){
+                  
+                    $my_services = ApiResource::collection(Auth::user()->order->where('status','complete'));
+                    return $this->returnData($my_services);
+    
+    
+                }else{
+                    return $this->returnError(200 , '  لايوجد لديك خدمات منتهية' );
+    
+                }
+                }else{
+                    return $this->returnError(200 , 'هذه الصالحيه ليست لك');
+    
+                }
+    
+                
+              
+            }
+
+     
       
 
 

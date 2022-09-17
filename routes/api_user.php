@@ -28,7 +28,7 @@ Route::group([
 
 Route::group(['middleware'=>['AuthApi:user_api']],function(){
 
-   Route::get('profile', 'UserController@profile');
+   Route::post('profile', 'UserController@profile');
    Route::post('profile/update', 'UserController@profile_update');
    Route::post('login/as/serviceProvider', 'UserController@serviceProvider');
 
@@ -37,7 +37,7 @@ Route::group(['middleware'=>['AuthApi:user_api']],function(){
    Route::post('user/withdraw/wallet','UserController@withdraw_wallet');
 
 
-   Route::get('user/scope','UserController@scopes');
+   Route::post('user/scope','UserController@scopes');
    Route::post('user/scope/store','UserController@store');
 
 
@@ -49,17 +49,19 @@ Route::group(['middleware'=>['AuthApi:user_api']],function(){
 
 
 
-    Route::get('users/order','OrderController@index');
+    Route::post('users/order','OrderController@index');
     Route::post('users/order/store','OrderController@store');
     Route::post('users/order/update/{id}','OrderController@update');
     Route::post('users/order/show/{id}','OrderController@show');
     Route::post('users/order/delete/{id}','OrderController@destroy');
-    Route::get('my-order','OrderController@order');
+    Route::post('my-order','OrderController@order');
     Route::post('request/order/{id}','OrderController@request_order');
     Route::post('accept/order/{id}','OrderController@accpet_order');
     Route::post('cancel/order/{id}','OrderController@cancel_order');
     Route::post('complete/order','OrderController@complete_order');
 
+    Route::post('users/services','OrderController@Services');
+    Route::post('users/services/complete','OrderController@Services_complete');
 
     Route::post('order/favorite/store/{id}','OrderController@favoriteStore');
     Route::post('order/favorite/delete/{id}','OrderController@favoriteDelete');
