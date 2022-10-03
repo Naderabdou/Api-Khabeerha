@@ -188,8 +188,12 @@ class OrderController extends Controller
                     return $this->returnError(404 , 'the order is not found');
                 };
               
-                if($order->status == 'Discuss' || $order->user[0]->id !== Auth::user()->id){
-                    return $this->returnError(404 , 'لايمكن تقديم لهذا الطلب');
+                if($order->status == 'Discuss' ){{
+                    if($order->user[0]->id !== Auth::user()->id){
+                        return $this->returnError(404 , 'لايمكن تقديم لهذا الطلب');
+
+                    }
+                }
 
                 }else{
                     $order->user()->syncWithPivotValues(Auth::user()->id ,['price'=>$data['price']]);
@@ -232,18 +236,28 @@ class OrderController extends Controller
      public function cancel_order($id){
         $order = Order::find($id);
         $user=$order->user()->first();
+       
        if(!$user){
         return $this->returnError('E001', 'البيانات  غير صحيحة');
        }
+       if(Auth::user()->id ===$order->user_id ){
         $order->user()->detach($user->id);
         $order->status=null;
         $order->save();
         return $this->returnSuccessMessage('تم رفض الطلب بنجاح','200');
+       }
+
+       
 
      }
 
 
      public function favoriteStore($id){
+        $order = Order::find($id);
+       if(!$order){
+        return $this->returnError(200 , 'order is not found');
+
+       }
         Auth::user()->fav()->syncWithoutDetaching($id);
         return $this->returnSuccessMessage('تم اضافة الطلب لقائمة المفضله بنجاح','200');
 

@@ -38,7 +38,7 @@ Route::group(['middleware'=>['AuthApi:user_api']],function(){
 
 
    Route::post('user/scope','UserController@scopes');
-   Route::post('user/scope/store','UserController@store');
+   Route::post('user/scope/store','UserController@store_scope');
 
 
    Route::post('user/rate/store/{service_provider_id}','UserController@rate_store');

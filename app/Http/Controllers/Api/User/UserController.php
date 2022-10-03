@@ -71,7 +71,7 @@ public function scopes(){
 }
 
 
-public function store(Request $request){
+public function store_scope(Request $request){
   $rules = [
     'name_main'=>'required|string',
     'name_sub'=>'required|string',
