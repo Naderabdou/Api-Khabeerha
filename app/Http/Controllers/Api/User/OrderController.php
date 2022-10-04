@@ -188,9 +188,12 @@ class OrderController extends Controller
                     return $this->returnError(404 , 'the order is not found');
                 };
               
-                if($order->status == 'Discuss' ){{
+                if($order->status == 'receiving' ){{
                     if($order->user[0]->id !== Auth::user()->id){
                         return $this->returnError(404 , 'لايمكن تقديم لهذا الطلب');
+
+                    }else{
+                        return $this->returnError(404 , 'انت بالفعل لفدت قدم لهذا الطلب');
 
                     }
                 }
@@ -209,10 +212,13 @@ class OrderController extends Controller
                 return $this->returnError(200 , 'هذه الصالحيه ليست لك');
 
             }
+
             
 
 
         }
+
+        
 
         public function accpet_order($id){
             $order = Order::find($id);
@@ -236,7 +242,6 @@ class OrderController extends Controller
      public function cancel_order($id){
         $order = Order::find($id);
         $user=$order->user()->first();
-       
        if(!$user){
         return $this->returnError('E001', 'البيانات  غير صحيحة');
        }
