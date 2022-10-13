@@ -9,6 +9,7 @@ use App\Models\User;
 
 use App\Models\User_Order;
 
+use App\Models\FavOrder;
 
 use App\Http\Resources\ApiResource;
 use App\Http\Resources\FavOrderResource;
@@ -42,10 +43,10 @@ class OrderController extends Controller
         'name_main'=>'required|string',
         'name_sub'=>'required|string',
         'desc'=>'required|string',
-        'from'=>'numeric',
-        'to'=>'numeric',
+        'from'=>'numeric|nullable',
+        'to'=>'numeric|nullable',
         'GBS'=>'required',
-        'file'=>'image',
+        'file'=>'image|nullable',
       
 
         ];
@@ -58,7 +59,8 @@ class OrderController extends Controller
         }
 
         $data = $validator->validated();
-        if ($data['file'] != ''){
+       
+        if ($request->has('file')){
             $path=Storage::disk('public')->putFile('/file',$request->file);
             $data['file']=$path;
         }
@@ -66,7 +68,7 @@ class OrderController extends Controller
         $data['user_id'] = $user_id = Auth::user()->id;
         $data['code_order'] =  $code_order = rand(1000, 9999);
 
-       
+      
 
         Order::create(
             $data
@@ -104,7 +106,7 @@ class OrderController extends Controller
                 $path=Storage::disk('public')->putFile('/file',$request->file);
                 $data['file']=$path;
             }
-            if(Auth::user()->id == $order->user_id ){
+            if(Auth::user()->id == $order->user_id && Auth::user()->role === 'user' ){
                 $order->update($data);
 
             }else{
@@ -133,7 +135,7 @@ class OrderController extends Controller
         if(!$order){
             return $this->returnError(404 , 'the order is not found');
         };
-        if(Auth::user()->id == $order->user_id ){
+        if(Auth::user()->id == $order->user_id && Auth::user()->role === 'user'){
             $order->destroy($id);
 
         }else{
@@ -222,18 +224,24 @@ class OrderController extends Controller
 
         public function accpet_order($id){
             $order = Order::find($id);
-            if(Auth::user()->id ===$order->user_id ){
-                $user=$order->user()->first();
-                $order->user()->syncWithPivotValues($user->id,['status'=>'1']);
-                $order->status='Discuss';
-                $order->save();
-                return $this->returnSuccessMessage('تم الموافقه علي الطلب بنجاح','200');
+            if($order->status !== 'Discuss'){
+                if(Auth::user()->id ===$order->user_id ){
+                    $user=$order->user()->first();
+                    $order->user()->syncWithPivotValues($user->id,['status'=>'1']);
+                    $order->status='Discuss';
+                    $order->save();
+                    return $this->returnSuccessMessage('تم الموافقه علي الطلب بنجاح','200');
+        
+                }else{
+                    return $this->returnError(200 , 'هذه الصالحيه ليست لك');
     
+                }
+          
             }else{
-                return $this->returnError(200 , 'هذه الصالحيه ليست لك');
+                return $this->returnError(200 , 'لقد وافقت علي هذا الطلب بالفعل');
 
             }
-      
+           
            
         
 
@@ -245,11 +253,14 @@ class OrderController extends Controller
        if(!$user){
         return $this->returnError('E001', 'البيانات  غير صحيحة');
        }
-       if(Auth::user()->id ===$order->user_id ){
+       if(Auth::user()->id ===$order->user_id && Auth::user()->role == 'user' ){
         $order->user()->detach($user->id);
         $order->status=null;
         $order->save();
         return $this->returnSuccessMessage('تم رفض الطلب بنجاح','200');
+       }else{
+        return $this->returnError(200 , 'هذه الصالحيه ليست لك');
+
        }
 
        
@@ -263,14 +274,27 @@ class OrderController extends Controller
         return $this->returnError(200 , 'order is not found');
 
        }
+       if(count(FavOrder::where(['user_id'=>Auth::user()->id , 'order_id'=>$id])->get()) !== 1){
         Auth::user()->fav()->syncWithoutDetaching($id);
         return $this->returnSuccessMessage('تم اضافة الطلب لقائمة المفضله بنجاح','200');
 
+       }else{
+        return $this->returnError(200 , ' لقد تم اضافته من قبل لقائمة المفضله');
+
+       }
+       
+       
      }
 
      public function favoriteDelete($id){
-        Auth::user()->fav()->detach($id);
-        return $this->returnSuccessMessage('تم حذف الطلب من قائمة المفضلة بنجاح','200');
+        if(count(FavOrder::where(['user_id'=>Auth::user()->id , 'order_id'=>$id])->get()) == 0){
+            return $this->returnError(200 , 'لايوجد طلبات مفضله للحذف');
+
+        }else{
+            Auth::user()->fav()->detach($id);
+            return $this->returnSuccessMessage('تم حذف الطلب من قائمة المفضلة بنجاح','200');
+        }
+       
 
      }
      
@@ -290,18 +314,23 @@ class OrderController extends Controller
      }
      public function complete_order(){
         
-        
-        if( count(Auth::user()->orders->where('status','complete')) > 0){
+        if(Auth::user()->role ==='user'){
+            if( count(Auth::user()->orders->where('status','complete')) > 0 ){
                   
-            $my_services = ApiResource::collection(Auth::user()->orders->where('status','complete')->load('user'));
-            return $this->returnData($my_services,'success');
-
-
+                $my_services = ApiResource::collection(Auth::user()->orders->where('status','complete')->load('user'));
+                return $this->returnData($my_services,'success');
+    
+    
+            }else{
+                return $this->returnError(200 , '  لايوجد لديك طلبات منتهية' );
+    
+            }
+             
         }else{
-            return $this->returnError(200 , '  لايوجد لديك طلبات منتهية' );
+            return $this->returnError(200 , 'هذه الصالحيه ليست لك');
 
         }
-         
+       
          
 
          

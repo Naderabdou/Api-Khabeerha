@@ -42,6 +42,8 @@ Route::group(['middleware'=>['AuthApi:user_api']],function(){
 
 
    Route::post('user/rate/store/{service_provider_id}','UserController@rate_store');
+   Route::post('user/rate/update/{service_provider_id}','UserController@rate_update');
+
    Route::post('user/rate','UserController@rate');
 
 

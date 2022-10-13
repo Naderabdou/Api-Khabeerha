@@ -36,13 +36,13 @@ class UserController extends Controller
 
 public function profile_update(Request $request){
   $rules = [
-    'first_name' => 'string|between:2,100',
-    'last_name'=>'string|max:100|between:2,100',
-    'email' => 'string|email|max:100|unique:users',
-    'phone'=>'max:100|unique:users',
-    'city'=>'string|max:100|between:2,100',
-    'date'=>'numeric',
-    'ID_number'=>'string|between:2,20',
+    'first_name' => 'string|between:2,100|nullable',
+    'last_name'=>'string|max:100|between:2,100|nullable',
+    'email' => 'string|email|max:100|unique:users|nullable',
+    'phone'=>'max:100|unique:users|nullable',
+    'city'=>'string|max:100|between:2,100|nullable',
+    'date'=>'numeric|nullable',
+    'ID_number'=>'string|between:2,20|nullable',
     
            
     ];
@@ -101,7 +101,7 @@ public function serviceProvider(Request $request){
     'ID_number'=>'required|string|unique:users',
     'ID_img'=>'required|image|unique:users',
     'scope'=>'required|string',
-    'about'=>'string',
+    'about'=>'string|nullable',
     'Bank_Number'=>'required|string|unique:users'
     ];
     $validator = Validator::make($request->all(), $rules);
@@ -124,17 +124,22 @@ public function charging_wallet(Request $request){
   
   $user = Auth::user();
   $user->deposit($request->money); 
-  $balance= $user->balance; // 0
   return $this->returnData(['balance'=>$balance ], 'تم شحن الرصيد بنجاح' );
 }
 
 public function withdraw_wallet(Request $request){
   
   $user = Auth::user();
-  $user->forceWithdraw($request->money); /// 
   $balance= $user->balance; // 0
 
-  return $this->returnData(['balance'=>$balance ] , 'تم سحب الرصيد بنجاح' );
+  if($balance <= 0){
+    return $this->returnData(['balance'=>0 ] , 'رصيدك لايكفي للسحب ' );
+
+  }else{
+    $user->forceWithdraw($request->money); /// 
+    return $this->returnData(['balance'=>$balance ] , 'تم سحب الرصيد بنجاح' );
+  }
+ 
 
 
 
@@ -156,13 +161,16 @@ public function rate_store($service_provider_id,Request $request){
     $data['service_provider_id'] = $service_provider_id;
 
     $count=count(Rate::where(['user_id'=>Auth::user()->id , 'service_provider_id'=>$service_provider_id])->get());
-
+    if(Auth::user()->id === $service_provider_id){
+      return $this->returnError(200 , 'لايمكن تقيم نفسك');
+    }
 
     if(User::find($service_provider_id)->role === 'service_provider'){
        if($count == 1){
         return $this->returnError(200 , 'لقد قمت بقتيم لهذا الشخص من قبل ');
 
        }else{
+        
         Rate::create($data);
        }
     }else{
@@ -173,6 +181,37 @@ public function rate_store($service_provider_id,Request $request){
     return $this->returnSuccessMessage('تم اضافة تقيمك بنجاح');
 
 }
+public function rate_update($service_provider_id,Request $request){
+  $rules = [
+    'rate'=>'nullable',
+    'desc'=>'nullable',
+   
+    ];
+    $validator = Validator::make($request->all(), $rules);
+    if ($validator->fails()) {
+        $code = $this->returnCodeAccordingToInput($validator);
+        return $this->returnValidationError($code, $validator);
+    }
+    $data = $validator->validated();
+    $rate= Rate::where(['user_id'=>Auth::user()->id , 'service_provider_id'=>$service_provider_id])->first()  ;
+    if(User::find($service_provider_id)->role === 'service_provider'){
+          $rate->update($data);
+          return $this->returnSuccessMessage('تم تعديل تقيمك بنجاح');
+
+    }else{
+      return $this->returnError(200 , 'هذا ليس مزود خدمه ');
+
+    }
+
+}
+
+
+
+
+
+
+
+
 public function rate(){
   if(Auth::user()->role == 'service_provider' ){
    $data= Rate::where('service_provider_id','=',Auth::user()->id)->get();

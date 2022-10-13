@@ -15,13 +15,13 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->string('name_main');
-            $table->string('name_sub');
-            $table->text('desc');
-            $table->string('code_order');
+            $table->string('name_main')->nullable();
+            $table->string('name_sub')->nullable();
+            $table->text('desc')->nullable();
+            $table->string('code_order')->nullable();
             $table->decimal('from')->nullable();
             $table->decimal('to')->nullable();
-            $table->string('GBS');
+            $table->string('GBS')->nullable();
             $table->string('file')->nullable();
             $table->enum('status',['receiving','Discuss','under_review',' under_way','complete','canceled'])->nullable();
 
